@@ -1,4 +1,4 @@
-# GDL kernel for IPython/Jupyter
+# GDL kernel for Jupyter
 
 Demo [Notebook](demo.ipynb)
 
