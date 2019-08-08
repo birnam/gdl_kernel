@@ -1,4 +1,4 @@
-# GDL/IDL kernel for IPython/Jupyter
+# GDL kernel for IPython/Jupyter
 
 Demo [Notebook](demo.ipynb)
 
@@ -13,10 +13,10 @@ or
 python3 setup.py install --prefix=~/.local
 ```
 
-This should make an IDL directory containing the kernelspec in `~/.local/share/jupyter/kernels`, and place `idl_kernel.py` in `~/.local/lib/pythonX.X/site-packages`.
+This should make an GDL directory containing the kernelspec in `~/.local/share/jupyter/kernels`, and place `gdl_kernel.py` in `~/.local/lib/pythonX.X/site-packages`.
 
 To run:
 ```
 jupyter notebook 
-#Select IDL kernel from dropdown menu
+#Select GDL kernel from dropdown menu
 ```
