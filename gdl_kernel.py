@@ -17,10 +17,10 @@ __version__ = '0.5'
 
 version_pat = re.compile(r'Version (\d+(\.\d+)+)')
 
-class IDLKernel(Kernel):
-    implementation = 'idl_kernel'
+class GDLKernel(Kernel):
+    implementation = 'gdl_kernel'
     implementation_version = __version__
-    language = 'IDL'
+    language = 'GDL'
     @property
     def language_version(self):
         try:
@@ -34,26 +34,23 @@ class IDLKernel(Kernel):
     def banner(self):
         if self._banner is None:
             try:
-                if os.path.basename(self._executable) == 'idl':
-                    self._banner = check_output([self._executable, '-e','"print,string(0B)"']).decode('utf-8')
-                else:
-                    self._banner = check_output([self._executable, '--version']).decode('utf-8')
+                self._banner = check_output([self._executable, '--version']).decode('utf-8')
             except:
                 self._banner = ''
 
         return self._banner
     
-    language_info = {'name': 'idl',
-                     'codemirror_mode': 'idl',
+    language_info = {'name': 'gdl',
+                     'codemirror_mode': 'gdl',
                      'mimetype': 'text/x-idl',
                      'file_extension': '.pro'}
 
     def __init__(self, **kwargs):
         Kernel.__init__(self, **kwargs)
-        self._start_idl()
+        self._start_gdl()
 
         try:
-            self.hist_file = os.path.join(locate_profile(),'idl_kernel.hist')
+            self.hist_file = os.path.join(locate_profile(),'gdl_kernel.hist')
         except:
             self.hist_file = None
             self.log.warn('No default profile found, history unavailable')
@@ -61,27 +58,23 @@ class IDLKernel(Kernel):
         self.max_hist_cache = 1000
         self.hist_cache = []
 
-    def _start_idl(self):
+    def _start_gdl(self):
         # Signal handlers are inherited by forked processes, and we can't easily
         # reset it from the subprocess. Since kernelapp ignores SIGINT except in
         # message handlers, we need to temporarily reset the SIGINT handler here
-        # so that IDL and its children are interruptible.
+        # so that GDL and its children are interruptible.
         sig = signal.signal(signal.SIGINT, signal.SIG_DFL)
         try:
-            self._executable = find_executable("idl")
-            self._child  = spawn(self._executable,timeout = 300, encoding='utf-8')
-            self.idlwrapper = replwrap.REPLWrapper(self._child,u"IDL> ",None)
-        except:
             self._executable = find_executable("gdl")
             self._child  = spawn(self._executable,timeout = 300, encoding='utf-8')
-            self.idlwrapper = replwrap.REPLWrapper(self._child,u"GDL> ",None)
+            self.gdlwrapper = replwrap.REPLWrapper(self._child,u"GDL> ",None)
         finally:
             signal.signal(signal.SIGINT, sig)
 
-        self.idlwrapper.run_command("!quiet=1 & defsysv,'!inline',0 & !more=0".rstrip(), timeout=None)
-        # Compile IDL routines/functions
+        self.gdlwrapper.run_command("!quiet=1 & defsysv,'!inline',0 & !more=0".rstrip(), timeout=None)
+        # Compile GDL routines/functions
         dirname = os.path.dirname(os.path.abspath(__file__))
-        self.idlwrapper.run_command(".compile "+dirname+"/snapshot.pro",timeout=None)
+        self.gdlwrapper.run_command(".compile "+dirname+"/snapshot.pro",timeout=None)
 
     def do_execute(self, code, silent, store_history=True, user_expressions=None,
                    allow_stdin=False):
@@ -95,11 +88,8 @@ class IDLKernel(Kernel):
             return {'status':'abort','execution_count':self.execution_count}
 
         elif (code.strip().startswith('.') or code.strip().startswith('@')):
-            # This is a IDL Executive command
-            output = self.idlwrapper.run_command(code.strip(), timeout=None) 
-
-            if os.path.basename(self._executable) == 'idl':
-                output = '\n'.join(output.splitlines()[1::])+'\n'
+            # This is a GDL Executive command
+            output = self.gdlwrapper.run_command(code.strip(), timeout=None) 
 
             if not silent:
                 stream_content = {'name': 'stdout', 'text':output}
@@ -136,12 +126,8 @@ class IDLKernel(Kernel):
             tfile_code.file.close()
             tfile_post.file.write(postcall.rstrip())
             tfile_post.file.close()
-            output = self.idlwrapper.run_command(".run "+tfile_code.name, timeout=None)
-            self.idlwrapper.run_command(".run "+tfile_post.name,timeout=None)
-
-            # IDL annoying prints out ".run tmp..." command this removes it
-            if os.path.basename(self._executable) == 'idl':
-                output = '\n'.join(output.splitlines()[1::])+'\n'
+            output = self.gdlwrapper.run_command(".run "+tfile_code.name, timeout=None)
+            self.gdlwrapper.run_command(".run "+tfile_post.name,timeout=None)
 
             # Publish images if there are any
             images = [open(imgfile, 'rb').read() for imgfile in glob("%s/*.png" % plot_dir)]
@@ -154,13 +140,13 @@ class IDLKernel(Kernel):
             for data in display_data:
                 self.send_response(self.iopub_socket, 'display_data',{'data':data,'metadata':{}})
         except KeyboardInterrupt:
-            self.idlwrapper.child.sendintr()
+            self.gdlwrapper.child.sendintr()
             interrupted = True
-            self.idlwrapper._expect_prompt()
-            output = self.idlwrapper.child.before
+            self.gdlwrapper._expect_prompt()
+            output = self.gdlwrapper.child.before
         except EOF:
-            output = self.idlwrapper.child.before + 'Restarting IDL'
-            self._start_idl()
+            output = self.gdlwrapper.child.before + 'Restarting GDL'
+            self._start_gdl()
         finally:
             tfile_code.close()
             tfile_post.close()
@@ -209,7 +195,7 @@ class IDLKernel(Kernel):
     def do_shutdown(self, restart):
         self.log.debug("**Shutting down")
 
-        self.idlwrapper.child.kill(signal.SIGKILL)
+        self.gdlwrapper.child.kill(signal.SIGKILL)
 
         if self.hist_file:
             with open(self.hist_file,'wb') as f:
@@ -220,4 +206,4 @@ class IDLKernel(Kernel):
 
 if __name__ == '__main__':
     from ipykernel.kernelapp import IPKernelApp
-    IPKernelApp.launch_instance(kernel_class=IDLKernel)
+    IPKernelApp.launch_instance(kernel_class=GDLKernel)
