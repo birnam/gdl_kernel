@@ -13,7 +13,7 @@ class install_with_kernelspec(install):
     def run(self):
         install.run(self)
 
-        from IPython.kernel.kernelspec import KernelSpecManager
+        from jupyter_client.kernelspec import KernelSpecManager
         from IPython.utils.path import ensure_dir_exists
         destdir = os.path.join(KernelSpecManager().user_kernel_dir,'IDL')
         ensure_dir_exists(destdir)
@@ -29,14 +29,14 @@ if svem_flag in sys.argv:
     sys.argv.remove(svem_flag)
 
 setup(name='IDL_kernel',
-      version='0.4',
+      version='0.5',
       description='A IDL kernel for IPython',
       long_description=readme,
       author='Luke Stagner',
       url='https://github.com/lstagner/idl_kernel',
       py_modules=['idl_kernel'],
       cmdclass={'install': install_with_kernelspec},
-      install_requires=['pexpect>=3.3','IPython >= 3.0'],
+#      install_requires=['pexpect>=3.3','IPython >= 3.0'],
       classifiers = [
           'Framework :: Jupyter',
           'License :: OSI Approved :: BSD License',
