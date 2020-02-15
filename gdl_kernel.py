@@ -41,7 +41,7 @@ class GDLKernel(Kernel):
         return self._banner
     
     language_info = {'name': 'gdl',
-                     'codemirror_mode': 'gdl',
+                     'codemirror_mode': 'idl',
                      'mimetype': 'text/x-idl',
                      'file_extension': '.pro'}
 
