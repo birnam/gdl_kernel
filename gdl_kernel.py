@@ -72,12 +72,13 @@ class GDLKernel(Kernel):
             signal.signal(signal.SIGINT, sig)
 
         self.gdlwrapper.run_command("!quiet=1 & defsysv,'!inline',0 & !more=0".rstrip(), timeout=None)
-        # Compile GDL routines/functions
-        dirname = os.path.dirname(os.path.abspath(__file__))
-        self.gdlwrapper.run_command(".compile "+dirname+"/snapshot.pro",timeout=None)
+        self.gdlwrapper.run_command("SET_PLOT,'Z'".rstrip(), timeout=None)
+        self.gdlwrapper.run_command("DEVICE, SET_PIXEL_DEPTH=24, DECOMPOSED=1, SET_RESOLUTION=[800,600]".rstrip(), timeout=None)
 
     def do_execute(self, code, silent, store_history=True, user_expressions=None,
                    allow_stdin=False):
+
+        output = ""
 
         if not code.strip():
             return {'status': 'ok', 'execution_count': self.execution_count,
@@ -108,26 +109,22 @@ class GDLKernel(Kernel):
         plot_format = 'png'
 
         postcall = """
-            device,window_state=winds_arefgij
-            if !inline and total(winds_arefgij) ne 0 then begin
-                w_CcjqL6MA = where(winds_arefgij ne 0,nw_CcjqL6MA)
-                for i_KEv8eW6E=0,nw_CcjqL6MA-1 do begin
-                    wset, w_CcjqL6MA[i_KEv8eW6E]
-                    outfile_c5BXq4dV = '%(plot_dir)s/__fig'+strtrim(i_KEv8eW6E,2)+'.png'
-                    ii_rsApk4JS = snapshot(outfile_c5BXq4dV)
-                    wdelete
-                endfor
-	    endif
+            b = TVRD(TRUE=1)
+            if (ARRAY_EQUAL(b, 0b) eq 0) then begin
+                outfile = '%(plot_dir)s/__fig.png'
+                write_png, outfile, b
+                ERASE
+            endif
         end
         """ % locals()
 
         try:
-            tfile_code.file.write(code.rstrip()+"\na_adfadfw=1\nend")
+            tfile_code.file.write(code.rstrip()+"\nend")
             tfile_code.file.close()
             tfile_post.file.write(postcall.rstrip())
             tfile_post.file.close()
             output = self.gdlwrapper.run_command(".run "+tfile_code.name, timeout=None)
-            self.gdlwrapper.run_command(".run "+tfile_post.name,timeout=None)
+            self.gdlwrapper.run_command(".run "+tfile_post.name, timeout=None)
 
             # Publish images if there are any
             images = [open(imgfile, 'rb').read() for imgfile in glob("%s/*.png" % plot_dir)]
